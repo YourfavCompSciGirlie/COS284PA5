@@ -18,9 +18,17 @@ int width, height;
 
 PixelNode *readPPM(const char *filename);
 void computeCDFValues(PixelNode *head);
+
 void applyHistogramEqualization(PixelNode *head);
-void savePPM(const char *filename, PixelNode *head, int width, int height);
+extern void applyHistogramEqualisation(PixelNode* head);
+
+
 void writePPM(const char *filename, const PixelNode *head);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 PixelNode *readPPM(const char *filename)
 {
@@ -234,39 +242,6 @@ void applyHistogramEqualization(PixelNode *head)
     }
 }
 
-void savePPM(const char *filename, PixelNode *head, int width, int height)
-{
-    FILE *file = fopen(filename, "wb");
-    if (!file)
-    {
-        perror("Error opening file for writing");
-        return;
-    }
-
-    // header
-    fprintf(file, "P6\n%d %d\n255\n", width, height);
-
-    //pixel data
-    PixelNode *currentRow = head;
-    PixelNode *currentPixel;
-
-    while (currentRow != NULL)
-    {
-        currentPixel = currentRow;
-        while (currentPixel != NULL)
-        {
-            fwrite(&currentPixel->Red, 1, 1, file);
-            fwrite(&currentPixel->Green, 1, 1, file);
-            fwrite(&currentPixel->Blue, 1, 1, file);
-
-            currentPixel = currentPixel->right;
-        }
-        currentRow = currentRow->down;
-    }
-
-    fclose(file);
-}
-
 void writePPM(const char *filename, const PixelNode *head)
 {
     // 1. Open the File:
@@ -316,10 +291,15 @@ void writePPM(const char *filename, const PixelNode *head)
     fclose(file);
 }
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+
 int main()
 {
     const char *inputFilename = "image01.ppm";
-    const char *outputFilename = "output.ppm";
+    const char *outputFilename = "final_output.ppm";
 
     PixelNode *head = readPPM(inputFilename);
 
@@ -328,11 +308,12 @@ int main()
         //
         computeCDFValues(head);
         //
-        applyHistogramEqualization(head);
+      // applyHistogramEqualization(head);
+        //for assemnly
+      applyHistogramEqualisation(head);
+
         //
-        savePPM(outputFilename, head, width, height);
-        //
-        writePPM("final_output.ppm", head);
+        writePPM(outputFilename, head);
     }
 
     return 0;
