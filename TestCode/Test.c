@@ -17,12 +17,8 @@ typedef struct PixelNode
 int width, height;
 
 PixelNode *readPPM(const char *filename);
-void computeCDFValues(PixelNode *head);
-
-void applyHistogramEqualization(PixelNode *head);
-extern void applyHistogramEqualisation(PixelNode* head);
-
-
+extern void computeCDFValues(PixelNode *head);
+extern void applyHistogramEqualization(PixelNode* head);
 void writePPM(const char *filename, const PixelNode *head);
 
 
@@ -159,88 +155,62 @@ PixelNode *readPPM(const char *filename)
     return head;
 }
 
-void computeCDFValues(PixelNode *head)
-{
-    int histogram[256] = {0}; 
-    int cdf[256] = {0};       
-    int totalPixels = 0;
 
-    // 1. Compute the histogram
-    PixelNode *currentRow = head;
-    PixelNode *currentPixel;
-    while (currentRow != NULL)
-    {
-        currentPixel = currentRow;
-        while (currentPixel != NULL)
-        {
-            // Assuming grayscale, so use Red as representative intensity
-            unsigned char intensity = currentPixel->Red;
-            histogram[intensity]++;
-            totalPixels++;
-            currentPixel = currentPixel->right;
-        }
-        currentRow = currentRow->down;
-    }
 
-    // 2. compute the CDF from the histogram
-    cdf[0] = histogram[0];
-    for (int i = 1; i < 256; i++)
-    {
-        cdf[i] = cdf[i - 1] + histogram[i];
-    }
 
-    // 3. normalize the CDF values to scale from 0 to 255
-    for (int i = 0; i < 256; i++)
-    {
-        cdf[i] = (int)(((float)cdf[i] / totalPixels) * 255.0);
-    }
+// void computeCDFValues(PixelNode *head)
+// {
+//     int histogram[256] = {0}; 
+//     int cdf[256] = {0};       
+//     int totalPixels = 0;
 
-    // 4. assign the CDF values to the corresponding pixels
-    currentRow = head;
-    while (currentRow != NULL)
-    {
-        currentPixel = currentRow;
-        while (currentPixel != NULL)
-        {
-            // assign CDF value based on pixel intensity (grayscale, using Red channel)
-            unsigned char intensity = currentPixel->Red;
-            currentPixel->CdfValue = cdf[intensity];
-            currentPixel = currentPixel->right;
-        }
-        currentRow = currentRow->down;
-    }
-}
+//     // 1. Compute the histogram
+//     PixelNode *currentRow = head;
+//     PixelNode *currentPixel;
+//     while (currentRow != NULL)
+//     {
+//         currentPixel = currentRow;
+//         while (currentPixel != NULL)
+//         {
+//             // Assuming grayscale, so use Red as representative intensity
+//             unsigned char intensity = currentPixel->Red;
+//             histogram[intensity]++;
+//             totalPixels++;
+//             currentPixel = currentPixel->right;
+//         }
+//         currentRow = currentRow->down;
+//     }
 
-void applyHistogramEqualization(PixelNode *head)
-{
-    PixelNode *currentRow = head;
-    PixelNode *currentPixel;
+//     // 2. compute the CDF from the histogram
+//     cdf[0] = histogram[0];
+//     for (int i = 1; i < 256; i++)
+//     {
+//         cdf[i] = cdf[i - 1] + histogram[i];
+//     }
 
-    while (currentRow != NULL)
-    {
-        currentPixel = currentRow;
-        while (currentPixel != NULL)
-        {
-            // retrieve
-            unsigned char cdfValue = currentPixel->CdfValue;
-            unsigned char newPixelValue = (unsigned char)(cdfValue + 0.5);
+//     // 3. normalize the CDF values to scale from 0 to 255
+//     for (int i = 0; i < 256; i++)
+//     {
+//         cdf[i] = (int)(((float)cdf[i] / totalPixels) * 255.0);
+//     }
 
-            if (newPixelValue > 255)
-            {
-                newPixelValue = 255;
-            }
+//     // 4. assign the CDF values to the corresponding pixels
+//     currentRow = head;
+//     while (currentRow != NULL)
+//     {
+//         currentPixel = currentRow;
+//         while (currentPixel != NULL)
+//         {
+//             // assign CDF value based on pixel intensity (grayscale, using Red channel)
+//             unsigned char intensity = currentPixel->Red;
+//             currentPixel->CdfValue = cdf[intensity];
+//             currentPixel = currentPixel->right;
+//         }
+//         currentRow = currentRow->down;
+//     }
+// }
 
-            // setting pixel's RGB values to newPixelValue
-            currentPixel->Red = newPixelValue;
-            currentPixel->Green = newPixelValue;
-            currentPixel->Blue = newPixelValue;
 
-            // move to the next pixel 
-            currentPixel = currentPixel->right;
-        }
-        currentRow = currentRow->down;
-    }
-}
 
 void writePPM(const char *filename, const PixelNode *head)
 {
@@ -306,12 +276,9 @@ int main()
     if (head)
     {
         //
-        computeCDFValues(head);
+         computeCDFValues(head);
         //
-      // applyHistogramEqualization(head);
-        //for assemnly
-      applyHistogramEqualisation(head);
-
+         applyHistogramEqualization(head);
         //
         writePPM(outputFilename, head);
     }
