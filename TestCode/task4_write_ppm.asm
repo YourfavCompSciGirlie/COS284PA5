@@ -12,8 +12,8 @@ section .data
     maxval db "255", 10           
     space db " "                   
     newline db 10                  
-    error_msg db "Error opening file", 10
-    error_len equ $ - error_msg
+    err_msg db "Error opening file", 10
+    err_len equ $ - err_msg
 
 section .bss
     number_buffer resb 20          ;for number conversion
@@ -172,8 +172,8 @@ writePPM:
     ; print error message to stderr (file descriptor 2)
     mov rax, SYS_WRITE
     mov rdi, 2                   ; stderr
-    mov rsi, error_msg
-    mov rdx, error_len
+    mov rsi, err_msg
+    mov rdx, err_len
     syscall
     
     mov eax, 1                   ; return error code
