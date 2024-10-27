@@ -6,61 +6,62 @@
 ; Group member 05: David_Kalu_u23534975
 ; ==========================
 
-section .data
-    half dd 0.5         
-    zero dd 0             
-    max_val db 255        
-
 section .text
-    global applyHistogramEqualization
+    global applyHistogramEqualisation
 
+applyHistogramEqualisation:
+    push rbp                     ; Save base pointer for stack frame
+    mov rbp, rsp                 ; Establish new stack frame
+    push rbx                     ; Save rbx to preserve column traversal state
+    push r12                     ; Save r12 to preserve row traversal state
 
-applyHistogramEqualization:
-    push rbp
-    mov rbp, rsp
-    push rbx
-    push rdi
-    push rsi
-    mov rsi, rdi       
+    test rdi, rdi                ; Check if the head pointer is NULL
+    jz .cleanup                  ; If NULL, jump to cleanup section
 
-outer_loop:
-    test rsi, rsi         
-    jz done_outer
+    mov r12, rdi                 ; Set the row pointer to the start of the linked list
 
-    mov rbx, rsi          ; rbx = currentPixel = currentRow
+.row_iterate:
+    test r12, r12                ; Check if we've reached the end of rows
+    jz .cleanup                  ; If no more rows, proceed to cleanup
 
-inner_loop:
-    test rbx, rbx        
-    jz done_inner
+    mov rbx, r12                 ; Set the column pointer to the current row
 
-    movzx eax, byte [rbx + 3]    ;loading cdf value    
-    cvtsi2ss xmm0, eax           ; cdfvalue must be taken to float for rounding section in c code
-    addss xmm0, dword [half]     ; Add 0.5 for rounding
-    cvttss2si eax, xmm0          ; set back to an integer with truncation
-    
-    ; begining of the if statement in c code for clamping
-    cmp eax, 0
-    cmovl eax, dword [rel zero]  
-    cmp eax, 255
-    cmovg eax, dword [rel max_val] 
-    
-    mov byte [rbx], al           ; Red
-    mov byte [rbx + 1], al       ; Green
-    mov byte [rbx + 2], al       ; Blue
-    ; pixel = right pointer which is at an offset of 32
-    mov rbx, [rbx + 32]
-    jmp inner_loop
+.col_iterate:
+    test rbx, rbx                ; Check if we've reached the end of the current row
+    jz .next_row                 ; If current node is NULL, move to the next row
 
-done_inner:
-    ;down pointer is at offset 16 hence we move to it
-    mov rsi, [rsi + 16]
-    jmp outer_loop
+    movzx eax, byte [rbx + 3]    ; Load CdfValue from the pixel node
+    cvtsi2sd xmm0, eax           ; Convert CdfValue to double for precise rounding
+    addsd xmm0, qword [rel .const_0_5] ; Add 0.5 for rounding adjustment
+    cvttsd2si eax, xmm0          ; Convert back to integer for clamping
 
-done_outer:
-    pop rsi
-    pop rdi
-    pop rbx
-    mov rsp, rbp
-    pop rbp
+    cmp eax, 0                   ; Check if the value is less than 0
+    jge .check_high_clamp        ; If non-negative, skip low clamping
+    xor eax, eax                 ; Set value to 0 if negative (clamp)
+
+.check_high_clamp:
+    cmp eax, 255                 ; Check if the value exceeds 255
+    jle .apply_grayscale         ; If within bounds, proceed to apply grayscale
+    mov eax, 255                 ; Cap the value at 255 if it's too high
+
+.apply_grayscale:
+    mov byte [rbx], al           ; Update Red channel with grayscale value
+    mov byte [rbx + 1], al       ; Update Green channel with grayscale value
+    mov byte [rbx + 2], al       ; Update Blue channel with grayscale value
+
+    mov rbx, [rbx + 16]          ; Move to the next pixel in the row
+    jmp .col_iterate             ; Repeat for each pixel in the current row
+
+.next_row:
+    mov r12, [r12 + 32]          ; Move down to the next row in the image
+    jmp .row_iterate             ; Continue processing with the next row
+
+.cleanup:
+    pop r12                      ; Restore row pointer
+    pop rbx                      ; Restore column pointer
+    pop rbp                      ; Restore base pointer and exit function
     ret
 
+section .rodata
+    align 8
+.const_0_5: dq 0.5              ; Constant value used for rounding adjustment
