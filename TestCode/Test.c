@@ -1,6 +1,13 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <limits.h>
+#include <linux/limits.h>
+
+#define MAX_HEADER_SIZE 512
 
 typedef struct PixelNode
 {
@@ -19,7 +26,7 @@ int width, height;
 PixelNode *readPPM(const char *filename);
 extern void computeCDFValues(PixelNode *head);
 extern void applyHistogramEqualization(PixelNode* head);
-void writePPM(const char *filename, const PixelNode *head);
+extern void writePPM(const char *filename, const PixelNode *head);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,121 +162,12 @@ PixelNode *readPPM(const char *filename)
     return head;
 }
 
-
-
-
-// void computeCDFValues(PixelNode *head)
-// {
-//     int histogram[256] = {0}; 
-//     int cdf[256] = {0};       
-//     int totalPixels = 0;
-
-//     // 1. Compute the histogram
-//     PixelNode *currentRow = head;
-//     PixelNode *currentPixel;
-//     while (currentRow != NULL)
-//     {
-//         currentPixel = currentRow;
-//         while (currentPixel != NULL)
-//         {
-//             // Assuming grayscale, so use Red as representative intensity
-//             unsigned char intensity = currentPixel->Red;
-//             histogram[intensity]++;
-//             totalPixels++;
-//             currentPixel = currentPixel->right;
-//         }
-//         currentRow = currentRow->down;
-//     }
-
-//     // 2. compute the CDF from the histogram
-//     cdf[0] = histogram[0];
-//     for (int i = 1; i < 256; i++)
-//     {
-//         cdf[i] = cdf[i - 1] + histogram[i];
-//     }
-
-//     // 3. normalize the CDF values to scale from 0 to 255
-//     for (int i = 0; i < 256; i++)
-//     {
-//         cdf[i] = (int)(((float)cdf[i] / totalPixels) * 255.0);
-//     }
-
-//     // 4. assign the CDF values to the corresponding pixels
-//     currentRow = head;
-//     while (currentRow != NULL)
-//     {
-//         currentPixel = currentRow;
-//         while (currentPixel != NULL)
-//         {
-//             // assign CDF value based on pixel intensity (grayscale, using Red channel)
-//             unsigned char intensity = currentPixel->Red;
-//             currentPixel->CdfValue = cdf[intensity];
-//             currentPixel = currentPixel->right;
-//         }
-//         currentRow = currentRow->down;
-//     }
-// }
-
-
-
-void writePPM(const char *filename, const PixelNode *head)
-{
-    // 1. Open the File:
-    FILE *file = fopen(filename, "wb");
-    if (!file)
-    {
-        perror("Error opening file for writing");
-        return;
-    }
-
-    int width = 0, height = 0;
-
-    //traverse the first row
-    const PixelNode *currentPixel = head;
-    while (currentPixel != NULL)
-    {
-        width++;
-        currentPixel = currentPixel->right;
-    }
-
-    // traverse the first column
-    const PixelNode *currentRow = head;
-    while (currentRow != NULL)
-    {
-        height++;
-        currentRow = currentRow->down;
-    }
-
-    //PPM Header:
-    fprintf(file, "P6\n%d %d\n255\n", width, height);
-
-    currentRow = head;
-    while (currentRow != NULL)
-    {
-        currentPixel = currentRow;
-        while (currentPixel != NULL)
-        {
-            fwrite(&currentPixel->Red, 1, 1, file);
-            fwrite(&currentPixel->Green, 1, 1, file);
-            fwrite(&currentPixel->Blue, 1, 1, file);
-
-            currentPixel = currentPixel->right;
-        }
-        currentRow = currentRow->down;
-    }
-
-    fclose(file);
-}
-
-
-
-
 /////////////////////////////////////////////////////////////////////////////////////
 
 int main()
 {
     const char *inputFilename = "image01.ppm";
-    const char *outputFilename = "final_output.ppm";
+    const char *outputFilename = "output.ppm";
 
     PixelNode *head = readPPM(inputFilename);
 
